@@ -13,20 +13,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-public class FileUploadController {
+public class FileResourceController {
     private final StorageService storageService;
 
     @Autowired
-    public FileUploadController(StorageService storageService) {
+    public FileResourceController(StorageService storageService) {
         this.storageService = storageService;
-    }
-
-    // get file
-    @GetMapping("/files/{filename:.+}") @ResponseBody
-    public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
-        Resource file = storageService.loadAsResource(filename);
-        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
-                "attachment; filename=\"" + file.getFilename() + "\"").body(file);
     }
 
     // list name of files
@@ -35,12 +27,21 @@ public class FileUploadController {
         return storageService
                 .loadAll()
                 .map(path -> MvcUriComponentsBuilder
-                        .fromMethodName(FileUploadController.class,"serveFile",
-                        path.getFileName().toString()).build().toString())
+                        .fromMethodName(FileResourceController.class,"serveFile",
+                                path.getFileName().toString()).build().toString())
                 .collect(Collectors.toList());
 
     }
 
+    // get file as resource
+    @GetMapping("/files/{filename:.+}") @ResponseBody
+    public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
+        Resource file = storageService.loadAsResource(filename);
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=\"" + file.getFilename() + "\"").body(file);
+    }
+
+    // save file
     @PostMapping("/")
     public ResponseEntity<String> handleFileUpload(@RequestParam("file") MultipartFile file) {
         storageService.store(file);
